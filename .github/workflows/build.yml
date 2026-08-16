@@ -37,17 +37,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Next.js app & CLI bundle
+      - name: Build Next.js app (Standalone Server)
         run: |
-          npm run build:release
+          npm run build
         env:
           NODE_OPTIONS: "--max-old-space-size=12288"
           OMNIROUTE_BUILD_MEMORY_MB: "12288"
           OMNIROUTE_USE_TURBOPACK: "1"
 
+      - name: Clean build cache & large source maps
+        run: |
+          # Eliminar cachés innecesarios de Next.js/Turbopack si existen
+          find .build dist -type d -name "cache" -exec rm -rf {} + || true
+          # Eliminar archivos .map de depuración para ahorrar espacio masivo
+          find .build dist -name "*.map" -type f -delete || true
+
       - name: Archive build outputs
         run: |
-          tar -czf omniroute-build.tar.gz .build dist
+          # Empaquetamos el build ligero junto con los archivos de dependencias
+          tar -czf omniroute-build.tar.gz .build dist package.json package-lock.json
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
